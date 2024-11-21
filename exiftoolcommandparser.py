@@ -3,12 +3,13 @@ import re
 
 
 filenamePattern = 'FilenamePattern'
-exiftoolCommand = 'exiftool -m'
+exiftoolCommand = 'exiftool -m -progress -charset utf8 -LensType=MF -overwrite_original_in_place -P'
 
 class ExifToolCommandParser:
-    def __init__(self, cmdFile, offset=0):
+    def __init__(self, cmdFile, filmid, offset=0,):
         self.pattern_kv = re.compile(r'-([a-zA-Z]+)="([^"]+)"')
         self.pattern_filename = re.compile(r'\*.*\.(jpg|TIF)', re.IGNORECASE)
+        self.filmid = filmid
         self.cmdFile = cmdFile
         self.df = self._read_commands()
         self.preprocess(offset=offset)
@@ -49,23 +50,43 @@ class ExifToolCommandParser:
         def extract_photo_id(filename, offset=0):
             numeric_match = re.search(r'_(\d+)\.(TIF|tif|JPG|jpg)', filename)
             if numeric_match:
-                return str(int(numeric_match.group(1)) + offset).zfill(2)
+                return str(int(numeric_match.group(1)) + offset).zfill(4)
             return None
 
-        self.df['PhotoID'] = self.df[filenamePattern].apply(lambda x: extract_photo_id(x,offset=offset) if pd.notna(x) else None)
-        self.df['PhotoID'].attrs = {'private': True}
-        self.df[filenamePattern].attrs = {'private': True}
+        def extract_file_extension(filename):
+            extension_match = re.search(r'\.(TIF|tif|JPG|jpg)$', filename)
+            if extension_match:
+                return extension_match.group(1)
+            return None
 
-    def _save_commands(self, output_file):
+        self.df['FileExtension'] = self.df[filenamePattern].apply(lambda x: extract_file_extension(x) if pd.notna(x) else None)
+        self.df['PhotoID'] = self.df[filenamePattern].apply(lambda x: extract_photo_id(x,offset=offset) if pd.notna(x) else None)
+        self.df['Filename'] = self.filmid + self.df['PhotoID'] + '.' + self.df['FileExtension']
+        self.df['o'] = self.filmid + self.df['PhotoID'] + '.xmp' 
+
+        # Remove the string "Nikon" from the "Lens" column if it exists
+        if 'Lens' in self.df.columns:
+            self.df['Lens'] = self.df['Lens'].str.replace('Nikon ', '', regex=False)
+
+        # Rename 'ImageDescription' column to 'Title'
+        if 'ImageDescription' in self.df.columns:
+            self.df.rename(columns={'ImageDescription': 'Title'}, inplace=True)
+
+        self.df[filenamePattern].attrs = {'private': True}
+        self.df['PhotoID'].attrs = {'private': True}
+        self.df['FileExtension'].attrs = {'private': True}        
+        self.df['Filename'].attrs = {'private': True}
+
+    def save_commands(self, output_file):
         try:
             with open(output_file, 'w') as file:
                 for index, row in self.df.iterrows():
                     command = exiftoolCommand
                     for col in self.df.columns:
-                        if col != filenamePattern and pd.notna(row[col]):
+                        if  pd.notna(row[col]):
                             if not self.df[col].attrs.get('private', False):
                                 command += f' -{col}="{row[col]}"'
-                    command += f' {row[filenamePattern]}'
+                    command += f' {row["Filename"]}'
                     file.write(command + '\n')
             print(f"Exiftool commands have been written to {output_file}")
         except Exception as e:
