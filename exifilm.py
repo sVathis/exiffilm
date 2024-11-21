@@ -39,6 +39,19 @@ df = pd.DataFrame(data)
 
 print(df)
 
+# Generate the output file with exiftool commands
+output_file = 'output_exiftool_commands.txt'
+with open(output_file, 'w') as file:
+    for index, row in df.iterrows():
+        command = 'exiftool -m'
+        for col in df.columns:
+            if col != 'Filename' and pd.notna(row[col]):
+                command += f' -{col}="{row[col]}"'
+        command += f' {row["Filename"]}'
+        file.write(command + '\n')
+
+print(f"Exiftool commands have been written to {output_file}")
+
 # Save the DataFrame to a CSV file
 #df.to_csv(args.output_file, index=False)
 
