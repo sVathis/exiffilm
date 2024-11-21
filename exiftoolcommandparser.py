@@ -1,7 +1,10 @@
 import pandas as pd
 import re
 import shlex
+import exiftool
+import logging
 
+logging.basicConfig(level=logging.DEBUG)
 
 filenamePattern = 'FilenamePattern'
 defaultParameters = '-m -progress -charset utf8 -LensType=MF -overwrite_original_in_place -P '
@@ -106,7 +109,16 @@ class ExifToolCommandParser:
         row_list.append(row['Filename'])
         return row_list
 
+    def run_command(self, index):
+        row_list = self.get_row_as_command_list(index)
+        params =  defaultParametersList + row_list
+        print(params)
+        # with exiftool.ExifTool() as et:
+        #     et.execute(*params)
+        with exiftool.ExifToolHelper(logger=logging.getLogger(__name__)) as et:
+                et.execute(*params)
 
+        
     def __str__(self):
         return self.df.to_string()
     
