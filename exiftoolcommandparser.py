@@ -1,9 +1,13 @@
 import pandas as pd
 import re
+import shlex
 
 
 filenamePattern = 'FilenamePattern'
-exiftoolCommand = 'exiftool -m -progress -charset utf8 -LensType=MF -overwrite_original_in_place -P'
+defaultParameters = '-m -progress -charset utf8 -LensType=MF -overwrite_original_in_place -P '
+defaultParametersList = shlex.split(defaultParameters)
+exiftoolCommand = 'exiftool ' + defaultParameters
+
 
 class ExifToolCommandParser:
     def __init__(self, cmdFile, filmid, offset=0,):
@@ -91,3 +95,21 @@ class ExifToolCommandParser:
             print(f"Exiftool commands have been written to {output_file}")
         except Exception as e:
             print(f"Error saving file: {e}")
+
+    def get_row_as_command_list(self, index):
+        row = self.df.iloc[index]
+        row_list = []
+        for col in self.df.columns:
+            if pd.notna(row[col]):
+                if not self.df[col].attrs.get('private', False):
+                    row_list.append(f'-{col}={row[col]}')
+        row_list.append(row['Filename'])
+        return row_list
+
+
+    def __str__(self):
+        return self.df.to_string()
+    
+    def __repr__(self):
+        return self.df.to_string()
+    
