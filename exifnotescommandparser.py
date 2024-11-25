@@ -12,7 +12,7 @@ defaultParametersList = shlex.split(defaultParameters)
 exiftoolCommand = 'exiftool ' + defaultParameters
 
 
-class ExifToolCommandParser:
+class ExifNotesCommandParser:
     def __init__(self, cmdFile, filmid, offset=0,):
         self.pattern_kv = re.compile(r'-([a-zA-Z]+)="([^"]+)"')
         self.pattern_filename = re.compile(r'\*.*\.(jpg|TIF)', re.IGNORECASE)
