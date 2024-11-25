@@ -7,7 +7,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 filenamePattern = 'FilenamePattern'
-defaultParameters = '-m -progress -charset utf8 -LensType=MF -overwrite_original_in_place -P'
+defaultParameters = '-m -progress -charset utf8 -LensType=MF'
 defaultParametersList = shlex.split(defaultParameters)
 exiftoolCommand = 'exiftool ' + defaultParameters
 
