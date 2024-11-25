@@ -7,7 +7,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 filenamePattern = 'FilenamePattern'
-defaultParameters = '-m -progress -charset utf8 -LensType=MF -overwrite_original_in_place -P '
+defaultParameters = '-m -progress -charset utf8 -LensType=MF -overwrite_original_in_place -P'
 defaultParametersList = shlex.split(defaultParameters)
 exiftoolCommand = 'exiftool ' + defaultParameters
 
@@ -68,8 +68,7 @@ class ExifToolCommandParser:
 
         self.df['FileExtension'] = self.df[filenamePattern].apply(lambda x: extract_file_extension(x) if pd.notna(x) else None)
         self.df['PhotoID'] = self.df[filenamePattern].apply(lambda x: extract_photo_id(x,offset=offset) if pd.notna(x) else None)
-        self.df['Filename'] = self.filmid + self.df['PhotoID'] + '.' + self.df['FileExtension']
-        self.df['o'] = self.filmid + self.df['PhotoID'] + '.xmp' 
+        self.df['Filename'] = self.filmid + self.df['PhotoID'] 
 
         # Remove the string "Nikon" from the "Lens" column if it exists
         if 'Lens' in self.df.columns:
@@ -93,7 +92,7 @@ class ExifToolCommandParser:
                         if  pd.notna(row[col]):
                             if not self.df[col].attrs.get('private', False):
                                 command += f' -{col}="{row[col]}"'
-                    command += f' {row["Filename"]}'
+                    command += f' {row["Filename"]}.xmp'
                     file.write(command + '\n')
             print(f"Exiftool commands have been written to {output_file}")
         except Exception as e:
@@ -109,14 +108,15 @@ class ExifToolCommandParser:
         row_list.append(row['Filename'])
         return row_list
 
-    def run_command(self, index):
-        row_list = self.get_row_as_command_list(index)
+    def run_command(self, index=0):
+        row_list = self.get_row_as_command_list(index=index)
         params =  defaultParametersList + row_list
         print(params)
         # with exiftool.ExifTool() as et:
         #     et.execute(*params)
         with exiftool.ExifToolHelper(logger=logging.getLogger(__name__)) as et:
-                et.execute(*params)
+                #et.execute(*params)
+                pass
 
         
     def __str__(self):
